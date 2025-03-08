@@ -1,14 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 const tf = require("@tensorflow/tfjs-node");
-const { createCanvas, loadImage } = require("canvas");
 const Jimp = require("jimp");
+const { CHARACTERS  } = require("./train_constants");
 
 const TRAINING_PATH = "./training_data";  
-const IMAGE_SIZE = 28;
 
-const FIXED_CLASSES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-"]; 
-const NUM_CLASSES = FIXED_CLASSES.length;
+
 
 /**
  * **Kép augmentáció (forgatás, elmosás)**
@@ -45,12 +43,12 @@ async function loadImagesFromTrainingData() {
         if (file.endsWith(".png")) {
             const character = file.split('_').pop().split('.')[0]; // Karakter kinyerése
 
-            if (!FIXED_CLASSES.includes(character)) {
+            if (!CHARACTERS.includes(character)) {
                 console.warn(`⚠️ Figyelmeztetés: Ismeretlen címke "${character}" a fájlban: ${file}`);
                 continue;
             }
 
-            const label = FIXED_CLASSES.indexOf(character); // Fix osztály indexelése
+            const label = CHARACTERS.indexOf(character); // label készítése
 
             // **Eredeti kép betöltése Jimp-pel**
             const jimpImage = await Jimp.read(path.join(TRAINING_PATH, file));
@@ -59,22 +57,13 @@ async function loadImagesFromTrainingData() {
             const augmentedImages = await augmentImage(jimpImage);
 
             for (const augImage of augmentedImages) {
-                // **Kép átalakítása TensorFlow formátumra**
-                const canvas = createCanvas(IMAGE_SIZE, IMAGE_SIZE);
-                const ctx = canvas.getContext("2d");
-
+                // Kép beolvasása és átalakítása TensorFlow formátumra
                 const buffer = await augImage.getBufferAsync(Jimp.MIME_PNG);
-                const loadedImage = await loadImage(buffer);
-                ctx.drawImage(loadedImage, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
-
-                const imageData = ctx.getImageData(0, 0, IMAGE_SIZE, IMAGE_SIZE).data;
-                const grayscaleData = new Float32Array(IMAGE_SIZE * IMAGE_SIZE);
-
-                for (let i = 0; i < grayscaleData.length; i++) {
-                    grayscaleData[i] = imageData[i * 4] / 255;
-                }
-
-                dataset.push({ tensor: tf.tensor(grayscaleData, [IMAGE_SIZE, IMAGE_SIZE, 1]), label });
+                let tensor = tf.node.decodeImage(buffer,1) // 1 = grayscale formátum közvetlenül
+                    .resizeNearestNeighbor([28, 28]) 
+                    .toFloat() .div(255) // Normalizálás 0-1 közé
+            
+                dataset.push({ tensor, label });
             }
         }
     }
@@ -83,4 +72,4 @@ async function loadImagesFromTrainingData() {
     return dataset;
 }
 
-module.exports = { loadImagesFromTrainingData, NUM_CLASSES };
+module.exports = { loadImagesFromTrainingData };

@@ -1,0 +1,19 @@
+#canvas-container {
+    height: 150px;
+    cursor: crosshair;
+}
+
+.form-control{
+    width: 100px;
+}
+
+
+#particles-js {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: -1; /* Háttérbe teszi */
+    background: #000; /* Ha nincs elég részecske, a háttér fekete lesz */
+}

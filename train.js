@@ -1,5 +1,6 @@
 const tf = require("@tensorflow/tfjs-node");
-const { loadImagesFromTrainingData, NUM_CLASSES } = require("./training_dataset");
+const { loadImagesFromTrainingData } = require("./training_dataset");
+const { CHARACTERS } = require("./train_constants");
 
 /**
  * **Modellt betanítja a kiválasztott dataset alapján**
@@ -17,9 +18,7 @@ async function trainModel() {
     const labels = dataset.map(d => d.label);
 
     const xTrain = tf.stack(images);
-    console.log(`📊 NUM_CLASSES:`, NUM_CLASSES);
-
-    const yTrain = tf.oneHot(tf.tensor1d(labels, "int32"), NUM_CLASSES);
+    const yTrain = tf.oneHot(tf.tensor1d(labels, "int32"), CHARACTERS.length);
 
     // **Model felépítése**
     const model = tf.sequential();
@@ -27,7 +26,7 @@ async function trainModel() {
     model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
     model.add(tf.layers.flatten());
     model.add(tf.layers.dense({ units: 128, activation: "relu" }));
-    model.add(tf.layers.dense({ units: NUM_CLASSES, activation: "softmax" }));
+    model.add(tf.layers.dense({ units: CHARACTERS.length, activation: "softmax" }));
 
     model.compile({
         optimizer: "adam",
